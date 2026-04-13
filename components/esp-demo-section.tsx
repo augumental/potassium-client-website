@@ -3,21 +3,19 @@
 import { useRef, useState, useCallback } from "react"
 
 const MODULES = [
-  { name: "KillAura", category: "Combat", enabled: true, key: "R" },
-  { name: "Velocity", category: "Combat", enabled: true, key: "V" },
-  { name: "Criticals", category: "Combat", enabled: false, key: "C" },
-  { name: "AutoClicker", category: "Combat", enabled: true, key: "X" },
-  { name: "Speed", category: "Movement", enabled: true, key: "F" },
-  { name: "Flight", category: "Movement", enabled: false, key: "G" },
-  { name: "NoFall", category: "Movement", enabled: true, key: "N" },
-  { name: "Sprint", category: "Movement", enabled: true, key: "CTRL" },
+  { name: "Triggerbot", category: "Combat", enabled: true, key: "R" },
+  { name: "WTap", category: "Combat", enabled: true, key: "W" },
+  { name: "AutoStun", category: "Combat", enabled: false, key: "S" },
+  { name: "JumpReset", category: "Movement", enabled: true, key: "J" },
+  { name: "FastPlace", category: "Movement", enabled: true, key: "F" },
+  { name: "FastXP", category: "Movement", enabled: false, key: "X" },
   { name: "ESP", category: "Render", enabled: true, key: "E" },
   { name: "Tracers", category: "Render", enabled: false, key: "T" },
-  { name: "Nametags", category: "Render", enabled: true, key: "H" },
-  { name: "FullBright", category: "Render", enabled: true, key: "B" },
+  { name: "AutoPotRefill", category: "Utility", enabled: true, key: "P" },
+  { name: "SmartMend", category: "Utility", enabled: true, key: "M" },
 ]
 
-const CATEGORIES = ["Combat", "Movement", "Render"]
+const CATEGORIES = ["Combat", "Movement", "Render", "Utility"]
 
 export default function EspDemoSection() {
   const containerRef = useRef<HTMLDivElement>(null)
