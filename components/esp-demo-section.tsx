@@ -2,10 +2,9 @@
 
 import { useRef, useEffect, useState, useCallback } from "react"
 
-const DEFAULT_USERNAME = "Notch"
 const BOX_W = 104
 const BOX_H = 196
-const ENTITY_H = 220 // box + name tag below
+const ENTITY_H = 220
 
 export default function EspDemoSection() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -14,11 +13,15 @@ export default function EspDemoSection() {
   const dragOffset = useRef({ x: 0, y: 0 })
   const initialized = useRef(false)
 
-  const [username, setUsername] = useState(DEFAULT_USERNAME)
-  const [inputValue, setInputValue] = useState(DEFAULT_USERNAME)
+  // Locked state - demo starts blurred until user enters username
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [username, setUsername] = useState("")
+  const [inputValue, setInputValue] = useState("")
 
-  // Crafatar body render URL — updates when username changes
-  const bodyUrl = `https://crafatar.com/renders/body/${encodeURIComponent(username)}?scale=6&overlay`
+  // Crafatar body render URL
+  const bodyUrl = username
+    ? `https://crafatar.com/renders/body/${encodeURIComponent(username)}?scale=6&overlay`
+    : ""
 
   const [imgError, setImgError] = useState(false)
   const [hp] = useState(() => Math.floor(Math.random() * 60) + 40)
@@ -45,51 +48,42 @@ export default function EspDemoSection() {
     }
   }, [])
 
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isUnlocked) return
       e.preventDefault()
+      e.currentTarget.setPointerCapture(e.pointerId)
       setDragging(true)
-      dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
-    },
-    [pos]
-  )
-
-  const onTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      e.preventDefault()
-      const t = e.touches[0]
-      setDragging(true)
-      dragOffset.current = { x: t.clientX - pos.x, y: t.clientY - pos.y }
-    },
-    [pos]
-  )
-
-  useEffect(() => {
-    if (!dragging) return
-
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY
       if (!containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
-      const newX = Math.min(Math.max(0, clientX - rect.left - dragOffset.current.x), rect.width - BOX_W)
-      const newY = Math.min(Math.max(0, clientY - rect.top - dragOffset.current.y), rect.height - ENTITY_H)
+      dragOffset.current = {
+        x: e.clientX - rect.left - pos.x,
+        y: e.clientY - rect.top - pos.y,
+      }
+    },
+    [pos, isUnlocked]
+  )
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragging || !containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const newX = Math.min(
+        Math.max(0, e.clientX - rect.left - dragOffset.current.x),
+        rect.width - BOX_W
+      )
+      const newY = Math.min(
+        Math.max(0, e.clientY - rect.top - dragOffset.current.y),
+        rect.height - ENTITY_H
+      )
       setPos({ x: newX, y: newY })
-    }
+    },
+    [dragging]
+  )
 
-    const onUp = () => setDragging(false)
-
-    window.addEventListener("mousemove", onMove)
-    window.addEventListener("mouseup", onUp)
-    window.addEventListener("touchmove", onMove, { passive: false })
-    window.addEventListener("touchend", onUp)
-    return () => {
-      window.removeEventListener("mousemove", onMove)
-      window.removeEventListener("mouseup", onUp)
-      window.removeEventListener("touchmove", onMove)
-      window.removeEventListener("touchend", onUp)
-    }
-  }, [dragging])
+  const onPointerUp = useCallback(() => {
+    setDragging(false)
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,6 +91,7 @@ export default function EspDemoSection() {
     if (trimmed) {
       setImgError(false)
       setUsername(trimmed)
+      setIsUnlocked(true)
     }
   }
 
@@ -125,41 +120,16 @@ export default function EspDemoSection() {
             See the ESP in action
           </h2>
           <p className="text-muted-foreground mt-3 text-sm max-w-md mx-auto">
-            Enter any Minecraft username to load their skin, then drag the hitbox around the game world.
+            Enter your Minecraft username to unlock the demo and see your skin tracked in real-time.
           </p>
         </div>
-
-        {/* Username input */}
-        <form onSubmit={handleSubmit} className="flex justify-center gap-2 mb-8">
-          <div
-            className="flex items-center glass-card rounded-xl overflow-hidden"
-            style={{ border: "1px solid oklch(0.55 0.20 300 / 0.4)" }}
-          >
-            <span className="px-3 text-xs font-mono text-muted-foreground select-none border-r"
-              style={{ borderColor: "oklch(0.45 0.18 300 / 0.3)", paddingRight: "0.75rem", paddingTop: "0.5rem", paddingBottom: "0.5rem" }}>
-              IGN
-            </span>
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              maxLength={16}
-              placeholder="Enter username…"
-              className="bg-transparent outline-none text-sm font-mono text-white py-2 px-3 w-44 placeholder:text-muted-foreground"
-              style={{ caretColor: "oklch(0.72 0.28 300)" }}
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary rounded-xl px-5 py-2 text-sm font-semibold text-white"
-          >
-            Load Skin
-          </button>
-        </form>
 
         {/* Game viewport */}
         <div
           ref={containerRef}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
           className="relative rounded-3xl overflow-hidden glow-border select-none"
           style={{
             height: "460px",
@@ -167,10 +137,73 @@ export default function EspDemoSection() {
             backgroundImage:
               "linear-gradient(oklch(0.28 0.08 290 / 0.10) 1px, transparent 1px), linear-gradient(90deg, oklch(0.28 0.08 290 / 0.10) 1px, transparent 1px)",
             backgroundSize: "40px 40px",
-            cursor: dragging ? "grabbing" : "default",
+            cursor: isUnlocked ? (dragging ? "grabbing" : "default") : "default",
             border: "1px solid oklch(0.45 0.18 300 / 0.3)",
+            touchAction: "none",
           }}
         >
+          {/* Blurred overlay when locked */}
+          {!isUnlocked && (
+            <div
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center"
+              style={{
+                backdropFilter: "blur(12px)",
+                background: "oklch(0.08 0.04 290 / 0.7)",
+              }}
+            >
+              <div className="glass-card rounded-2xl p-6 md:p-8 max-w-sm mx-4 text-center">
+                <div
+                  className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "oklch(0.20 0.12 300 / 0.6)",
+                    border: "1px solid oklch(0.55 0.20 300 / 0.4)",
+                  }}
+                >
+                  <svg
+                    className="w-7 h-7"
+                    fill="none"
+                    stroke="oklch(0.72 0.28 300)"
+                    strokeWidth={1.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Unlock Demo</h3>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Enter your Minecraft username to see your skin in the ESP demo.
+                </p>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    maxLength={16}
+                    placeholder="Your username..."
+                    autoFocus
+                    className="w-full bg-transparent outline-none text-sm font-mono text-white py-3 px-4 rounded-xl placeholder:text-muted-foreground"
+                    style={{
+                      caretColor: "oklch(0.72 0.28 300)",
+                      background: "oklch(0.12 0.04 290 / 0.6)",
+                      border: "1px solid oklch(0.45 0.18 300 / 0.4)",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputValue.trim()}
+                    className="btn-primary rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                  >
+                    Start Demo
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* HUD: ESP status */}
           <div
             className="absolute top-3 left-3 glass-card rounded-lg px-3 py-1.5 font-mono text-xs flex items-center gap-2"
@@ -179,11 +212,13 @@ export default function EspDemoSection() {
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
               style={{
-                background: "oklch(0.65 0.28 160)",
-                boxShadow: "0 0 6px oklch(0.65 0.28 160)",
+                background: isUnlocked ? "oklch(0.65 0.28 160)" : "oklch(0.50 0.15 50)",
+                boxShadow: isUnlocked
+                  ? "0 0 6px oklch(0.65 0.28 160)"
+                  : "0 0 6px oklch(0.50 0.15 50)",
               }}
             />
-            ESP ACTIVE
+            {isUnlocked ? "ESP ACTIVE" : "ESP LOCKED"}
           </div>
 
           {/* HUD: FPS */}
@@ -214,14 +249,13 @@ export default function EspDemoSection() {
 
           {/* Draggable ESP entity */}
           <div
-            onMouseDown={onMouseDown}
-            onTouchStart={onTouchStart}
+            onPointerDown={onPointerDown}
             className="absolute"
             style={{
               left: pos.x,
               top: pos.y,
               width: BOX_W,
-              cursor: dragging ? "grabbing" : "grab",
+              cursor: isUnlocked ? (dragging ? "grabbing" : "grab") : "default",
               zIndex: 20,
               touchAction: "none",
             }}
@@ -262,13 +296,23 @@ export default function EspDemoSection() {
 
               {/* Player skin render from Crafatar */}
               <div className="flex items-end justify-center h-full pb-1 pointer-events-none overflow-hidden">
-                {imgError ? (
+                {!isUnlocked ? (
+                  <div className="flex flex-col items-center justify-center gap-1 opacity-30 pb-4">
+                    <div
+                      className="w-10 h-16 rounded"
+                      style={{ background: "oklch(0.30 0.08 290 / 0.6)" }}
+                    />
+                  </div>
+                ) : imgError ? (
                   <div className="flex flex-col items-center justify-center gap-1 opacity-50 pb-4">
                     <div
                       className="w-10 h-16 rounded"
                       style={{ background: "oklch(0.30 0.08 290 / 0.6)" }}
                     />
-                    <span className="text-xs font-mono" style={{ color: "oklch(0.55 0.15 300)", fontSize: 9 }}>
+                    <span
+                      className="text-xs font-mono"
+                      style={{ color: "oklch(0.55 0.15 300)", fontSize: 9 }}
+                    >
                       not found
                     </span>
                   </div>
@@ -317,7 +361,7 @@ export default function EspDemoSection() {
                   textOverflow: "ellipsis",
                 }}
               >
-                {username}
+                {username || "???"}
               </div>
               <div
                 className="px-1.5 py-px rounded font-mono"
@@ -338,7 +382,7 @@ export default function EspDemoSection() {
               className="text-xs font-mono px-3 py-1 rounded-lg glass-card"
               style={{ color: "oklch(0.55 0.15 300)" }}
             >
-              drag the hitbox to track the player
+              {isUnlocked ? "drag the hitbox to track the player" : "enter username to unlock"}
             </span>
           </div>
         </div>
