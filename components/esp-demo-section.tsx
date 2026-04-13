@@ -59,7 +59,7 @@ export default function EspDemoSection() {
   }
 
   const headUrl = username
-    ? `https://crafatar.com/avatars/${encodeURIComponent(username)}?size=64&overlay`
+    ? `https://mc-heads.net/avatar/${encodeURIComponent(username)}/64`
     : ""
 
   return (
