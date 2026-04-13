@@ -405,7 +405,7 @@ export default function EspDemoSection() {
                     color: "oklch(0.50 0.10 300)",
                   }}
                 >
-                  potassium.gg
+                  magnesium.wtf
                 </span>
                 <span
                   style={{
