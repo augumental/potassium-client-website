@@ -8,11 +8,11 @@ const MODULES = [
   { name: "AutoStun", category: "Combat", enabled: false, key: "S" },
   { name: "JumpReset", category: "Movement", enabled: true, key: "J" },
   { name: "FastPlace", category: "Movement", enabled: true, key: "F" },
-  { name: "FastXP", category: "Movement", enabled: false, key: "X" },
+  { name: "FastXP", category: "Utility", enabled: false, key: "X" },
   { name: "ESP", category: "Render", enabled: true, key: "E" },
   { name: "Tracers", category: "Render", enabled: false, key: "T" },
   { name: "AutoPotRefill", category: "Utility", enabled: true, key: "P" },
-  { name: "SmartMend", category: "Utility", enabled: true, key: "M" },
+  { name: "AutoDrain", category: "Combat", enabled: true, key: "M" },
 ]
 
 const CATEGORIES = ["Combat", "Movement", "Render", "Utility"]
@@ -145,7 +145,7 @@ export default function EspDemoSection() {
                   Unlock Preview
                 </h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Enter your Minecraft username to preview the Potassium Client GUI.
+                  Enter your Minecraft username to preview the Magnesium Client GUI.
                 </p>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <input
@@ -229,13 +229,13 @@ export default function EspDemoSection() {
                       className="text-white text-sm font-bold tracking-wide"
                       style={{ fontFamily: "var(--font-minecraft)" }}
                     >
-                      Potassium Client
+                      Magnesium Client
                     </h3>
                     <p
                       className="text-xs"
                       style={{ color: "oklch(0.60 0.15 300)", fontFamily: "var(--font-minecraft)", fontSize: 9 }}
                     >
-                      v2.4.1 | {username}
+                      v1.0 BETA | {username}
                     </p>
                   </div>
                 </div>
