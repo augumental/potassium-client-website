@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -16,15 +17,19 @@ export default function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
           ? "glass-card border-b"
-          : "bg-transparent"
+          : "bg-black/30 backdrop-blur-sm"
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full btn-primary flex items-center justify-center text-white font-bold text-sm">
-            K
-          </div>
-          <span className="text-white font-semibold tracking-wide">Potassium</span>
+          <Image
+            src="/logo.png"
+            alt="MG Client Logo"
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <span className="text-white font-semibold tracking-wide">Magnesium</span>
         </div>
 
         <div className="hidden md:flex items-center gap-8">
