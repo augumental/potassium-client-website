@@ -1,107 +1,68 @@
 "use client"
 
-import { useRef, useEffect, useState, useCallback } from "react"
+import { useRef, useState, useCallback } from "react"
 
-const BOX_W = 104
-const BOX_H = 196
-const ENTITY_H = 220
+const MODULES = [
+  { name: "KillAura", category: "Combat", enabled: true, key: "R" },
+  { name: "Velocity", category: "Combat", enabled: true, key: "V" },
+  { name: "Criticals", category: "Combat", enabled: false, key: "C" },
+  { name: "AutoClicker", category: "Combat", enabled: true, key: "X" },
+  { name: "Speed", category: "Movement", enabled: true, key: "F" },
+  { name: "Flight", category: "Movement", enabled: false, key: "G" },
+  { name: "NoFall", category: "Movement", enabled: true, key: "N" },
+  { name: "Sprint", category: "Movement", enabled: true, key: "CTRL" },
+  { name: "ESP", category: "Render", enabled: true, key: "E" },
+  { name: "Tracers", category: "Render", enabled: false, key: "T" },
+  { name: "Nametags", category: "Render", enabled: true, key: "H" },
+  { name: "FullBright", category: "Render", enabled: true, key: "B" },
+]
+
+const CATEGORIES = ["Combat", "Movement", "Render"]
 
 export default function EspDemoSection() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const [dragging, setDragging] = useState(false)
-  const dragOffset = useRef({ x: 0, y: 0 })
-  const initialized = useRef(false)
-
-  // Locked state - demo starts blurred until user enters username
+  const [rotation, setRotation] = useState({ x: 0, y: 0 })
   const [isUnlocked, setIsUnlocked] = useState(false)
-  const [username, setUsername] = useState("")
   const [inputValue, setInputValue] = useState("")
+  const [username, setUsername] = useState("")
+  const [activeCategory, setActiveCategory] = useState("Combat")
+  const [modules, setModules] = useState(MODULES)
 
-  // Crafatar body render URL
-  const bodyUrl = username
-    ? `https://crafatar.com/renders/body/${encodeURIComponent(username)}?scale=6&overlay`
-    : ""
-
-  const [imgError, setImgError] = useState(false)
-  const [hp] = useState(() => Math.floor(Math.random() * 60) + 40)
-  const [distance, setDistance] = useState(12)
-
-  // Recompute distance as player moves
-  useEffect(() => {
-    if (!containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const cx = rect.width / 2
-    const cy = rect.height / 2
-    const px = pos.x + BOX_W / 2
-    const py = pos.y + BOX_H / 2
-    const px_dist = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2)
-    setDistance(Math.max(1, Math.round(px_dist / 8)))
-  }, [pos])
-
-  // Center on mount
-  useEffect(() => {
-    if (containerRef.current && !initialized.current) {
-      initialized.current = true
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isUnlocked || !containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
-      setPos({ x: rect.width / 2 - BOX_W / 2, y: rect.height / 2 - BOX_H / 2 })
-    }
-  }, [])
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (!isUnlocked) return
-      e.preventDefault()
-      e.currentTarget.setPointerCapture(e.pointerId)
-      setDragging(true)
-      if (!containerRef.current) return
-      const rect = containerRef.current.getBoundingClientRect()
-      dragOffset.current = {
-        x: e.clientX - rect.left - pos.x,
-        y: e.clientY - rect.top - pos.y,
-      }
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+      const x = (e.clientY - centerY) / 25
+      const y = (e.clientX - centerX) / 25
+      setRotation({ x: Math.max(-15, Math.min(15, -x)), y: Math.max(-15, Math.min(15, y)) })
     },
-    [pos, isUnlocked]
+    [isUnlocked]
   )
 
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging || !containerRef.current) return
-      const rect = containerRef.current.getBoundingClientRect()
-      const newX = Math.min(
-        Math.max(0, e.clientX - rect.left - dragOffset.current.x),
-        rect.width - BOX_W
-      )
-      const newY = Math.min(
-        Math.max(0, e.clientY - rect.top - dragOffset.current.y),
-        rect.height - ENTITY_H
-      )
-      setPos({ x: newX, y: newY })
-    },
-    [dragging]
-  )
-
-  const onPointerUp = useCallback(() => {
-    setDragging(false)
+  const handleMouseLeave = useCallback(() => {
+    setRotation({ x: 0, y: 0 })
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = inputValue.trim()
     if (trimmed) {
-      setImgError(false)
       setUsername(trimmed)
       setIsUnlocked(true)
     }
   }
 
-  const hpPercent = Math.min(100, Math.max(0, hp))
-  const hpColor =
-    hpPercent > 60
-      ? "oklch(0.65 0.28 160)"
-      : hpPercent > 30
-      ? "oklch(0.75 0.28 80)"
-      : "oklch(0.65 0.28 25)"
+  const toggleModule = (name: string) => {
+    setModules((prev) =>
+      prev.map((m) => (m.name === name ? { ...m, enabled: !m.enabled } : m))
+    )
+  }
+
+  const headUrl = username
+    ? `https://crafatar.com/avatars/${encodeURIComponent(username)}?size=64&overlay`
+    : ""
 
   return (
     <section id="demo" className="py-24 px-6 relative">
@@ -114,68 +75,79 @@ export default function EspDemoSection() {
 
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-10">
-          <p className="text-xs tracking-widest uppercase text-primary mb-3">Interactive Demo</p>
+        <div className="text-center mb-12">
+          <p className="text-xs tracking-widest uppercase text-primary mb-3">Interactive Preview</p>
           <h2 className="text-4xl md:text-5xl font-bold text-white text-balance">
-            See the ESP in action
+            Experience the Client
           </h2>
           <p className="text-muted-foreground mt-3 text-sm max-w-md mx-auto">
-            Enter your Minecraft username to unlock the demo and see your skin tracked in real-time.
+            Move your mouse around to explore the GUI in 3D. Enter your username to personalize the experience.
           </p>
         </div>
 
-        {/* Game viewport */}
+        {/* 3D GUI Container */}
         <div
           ref={containerRef}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
-          className="relative rounded-3xl overflow-hidden glow-border select-none"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          className="relative flex items-center justify-center rounded-3xl overflow-hidden"
           style={{
-            height: "460px",
-            background: "oklch(0.10 0.03 290 / 0.85)",
-            backgroundImage:
-              "linear-gradient(oklch(0.28 0.08 290 / 0.10) 1px, transparent 1px), linear-gradient(90deg, oklch(0.28 0.08 290 / 0.10) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-            cursor: isUnlocked ? (dragging ? "grabbing" : "default") : "default",
-            border: "1px solid oklch(0.45 0.18 300 / 0.3)",
-            touchAction: "none",
+            height: "520px",
+            perspective: "1200px",
+            background: "oklch(0.06 0.02 290 / 0.5)",
+            border: "1px solid oklch(0.35 0.15 300 / 0.3)",
           }}
         >
+          {/* Background grid */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage:
+                "linear-gradient(oklch(0.25 0.10 300 / 0.08) 1px, transparent 1px), linear-gradient(90deg, oklch(0.25 0.10 300 / 0.08) 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+            }}
+          />
+
           {/* Blurred overlay when locked */}
           {!isUnlocked && (
             <div
               className="absolute inset-0 z-30 flex flex-col items-center justify-center"
               style={{
-                backdropFilter: "blur(12px)",
-                background: "oklch(0.08 0.04 290 / 0.7)",
+                backdropFilter: "blur(16px)",
+                background: "oklch(0.06 0.03 290 / 0.85)",
               }}
             >
               <div className="glass-card rounded-2xl p-6 md:p-8 max-w-sm mx-4 text-center">
                 <div
-                  className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center"
+                  className="w-16 h-16 mx-auto mb-5 rounded-xl flex items-center justify-center"
                   style={{
-                    background: "oklch(0.20 0.12 300 / 0.6)",
-                    border: "1px solid oklch(0.55 0.20 300 / 0.4)",
+                    background: "oklch(0.18 0.12 300 / 0.6)",
+                    border: "1px solid oklch(0.55 0.22 300 / 0.5)",
+                    boxShadow: "0 0 30px oklch(0.65 0.28 300 / 0.3)",
                   }}
                 >
                   <svg
-                    className="w-7 h-7"
+                    className="w-8 h-8"
                     fill="none"
-                    stroke="oklch(0.72 0.28 300)"
+                    stroke="oklch(0.78 0.28 300)"
                     strokeWidth={1.5}
                     viewBox="0 0 24 24"
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                      d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
                     />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Unlock Demo</h3>
-                <p className="text-sm text-muted-foreground mb-5">
-                  Enter your Minecraft username to see your skin in the ESP demo.
+                <h3
+                  className="text-2xl font-bold text-white mb-2"
+                  style={{ fontFamily: "var(--font-minecraft)" }}
+                >
+                  Unlock Preview
+                </h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Enter your Minecraft username to preview the Potassium Client GUI.
                 </p>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <input
@@ -183,208 +155,301 @@ export default function EspDemoSection() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     maxLength={16}
-                    placeholder="Your username..."
+                    placeholder="Enter username..."
                     autoFocus
-                    className="w-full bg-transparent outline-none text-sm font-mono text-white py-3 px-4 rounded-xl placeholder:text-muted-foreground"
+                    className="w-full outline-none text-sm text-white py-3 px-4 rounded-xl placeholder:text-muted-foreground"
                     style={{
+                      fontFamily: "var(--font-minecraft)",
                       caretColor: "oklch(0.72 0.28 300)",
-                      background: "oklch(0.12 0.04 290 / 0.6)",
-                      border: "1px solid oklch(0.45 0.18 300 / 0.4)",
+                      background: "oklch(0.10 0.04 290 / 0.7)",
+                      border: "1px solid oklch(0.45 0.18 300 / 0.5)",
                     }}
                   />
                   <button
                     type="submit"
                     disabled={!inputValue.trim()}
-                    className="btn-primary rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="btn-primary rounded-xl px-5 py-3 text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    style={{ fontFamily: "var(--font-minecraft)" }}
                   >
-                    Start Demo
+                    Open GUI
                   </button>
                 </form>
               </div>
             </div>
           )}
 
-          {/* HUD: ESP status */}
+          {/* 3D Turnable GUI */}
           <div
-            className="absolute top-3 left-3 glass-card rounded-lg px-3 py-1.5 font-mono text-xs flex items-center gap-2"
-            style={{ color: "oklch(0.72 0.28 300)", zIndex: 10 }}
-          >
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{
-                background: isUnlocked ? "oklch(0.65 0.28 160)" : "oklch(0.50 0.15 50)",
-                boxShadow: isUnlocked
-                  ? "0 0 6px oklch(0.65 0.28 160)"
-                  : "0 0 6px oklch(0.50 0.15 50)",
-              }}
-            />
-            {isUnlocked ? "ESP ACTIVE" : "ESP LOCKED"}
-          </div>
-
-          {/* HUD: FPS */}
-          <div
-            className="absolute top-3 right-3 glass-card rounded-lg px-3 py-1.5 font-mono text-xs"
-            style={{ color: "oklch(0.65 0.28 160)", zIndex: 10 }}
-          >
-            420 FPS
-          </div>
-
-          {/* Crosshair */}
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ zIndex: 5 }}
-          >
-            <div className="relative w-5 h-5">
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-white/70" />
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/70" />
-              <div
-                className="absolute inset-0 m-auto w-2 h-2 rounded-full border"
-                style={{
-                  borderColor: "oklch(0.72 0.28 300)",
-                  boxShadow: "0 0 6px oklch(0.72 0.28 300)",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Draggable ESP entity */}
-          <div
-            onPointerDown={onPointerDown}
-            className="absolute"
+            className="relative transition-transform duration-150 ease-out"
             style={{
-              left: pos.x,
-              top: pos.y,
-              width: BOX_W,
-              cursor: isUnlocked ? (dragging ? "grabbing" : "grab") : "default",
-              zIndex: 20,
-              touchAction: "none",
+              transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+              transformStyle: "preserve-3d",
+              width: "min(90vw, 560px)",
             }}
           >
-            {/* ESP bounding box */}
+            {/* Main GUI Panel */}
             <div
-              className="relative"
+              className="rounded-2xl overflow-hidden"
               style={{
-                width: BOX_W,
-                height: BOX_H,
-                border: "1.5px solid oklch(0.72 0.28 300 / 0.9)",
-                borderRadius: 3,
+                background: "oklch(0.10 0.05 290 / 0.92)",
+                border: "1px solid oklch(0.50 0.22 300 / 0.5)",
                 boxShadow:
-                  "0 0 18px oklch(0.65 0.28 300 / 0.45), inset 0 0 18px oklch(0.65 0.28 300 / 0.04)",
+                  "0 0 60px oklch(0.65 0.28 300 / 0.25), 0 25px 50px oklch(0 0 0 / 0.5), inset 0 1px 0 oklch(1 0 0 / 0.05)",
+                backdropFilter: "blur(24px)",
               }}
             >
-              {/* Corner brackets */}
-              {(
-                [
-                  { style: { top: -2, left: -2 }, bt: true, bl: true },
-                  { style: { top: -2, right: -2 }, bt: true, br: true },
-                  { style: { bottom: -2, left: -2 }, bb: true, bl: true },
-                  { style: { bottom: -2, right: -2 }, bb: true, br: true },
-                ] as const
-              ).map((c, i) => (
-                <div
-                  key={i}
-                  className="absolute w-3 h-3"
-                  style={{
-                    ...c.style,
-                    borderTop: c.bt ? "2px solid oklch(0.88 0.28 300)" : undefined,
-                    borderBottom: c.bb ? "2px solid oklch(0.88 0.28 300)" : undefined,
-                    borderLeft: c.bl ? "2px solid oklch(0.88 0.28 300)" : undefined,
-                    borderRight: c.br ? "2px solid oklch(0.88 0.28 300)" : undefined,
-                  }}
-                />
-              ))}
-
-              {/* Player skin render from Crafatar */}
-              <div className="flex items-end justify-center h-full pb-1 pointer-events-none overflow-hidden">
-                {!isUnlocked ? (
-                  <div className="flex flex-col items-center justify-center gap-1 opacity-30 pb-4">
+              {/* Title Bar */}
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{
+                  background: "linear-gradient(180deg, oklch(0.18 0.10 300 / 0.8), oklch(0.12 0.06 290 / 0.8))",
+                  borderBottom: "1px solid oklch(0.50 0.22 300 / 0.4)",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Player head */}
+                  {username && (
                     <div
-                      className="w-10 h-16 rounded"
-                      style={{ background: "oklch(0.30 0.08 290 / 0.6)" }}
-                    />
-                  </div>
-                ) : imgError ? (
-                  <div className="flex flex-col items-center justify-center gap-1 opacity-50 pb-4">
-                    <div
-                      className="w-10 h-16 rounded"
-                      style={{ background: "oklch(0.30 0.08 290 / 0.6)" }}
-                    />
-                    <span
-                      className="text-xs font-mono"
-                      style={{ color: "oklch(0.55 0.15 300)", fontSize: 9 }}
+                      className="w-8 h-8 rounded overflow-hidden"
+                      style={{
+                        border: "1px solid oklch(0.55 0.22 300 / 0.6)",
+                        boxShadow: "0 0 10px oklch(0.65 0.28 300 / 0.3)",
+                        imageRendering: "pixelated",
+                      }}
                     >
-                      not found
-                    </span>
+                      <img
+                        src={headUrl}
+                        alt={username}
+                        crossOrigin="anonymous"
+                        className="w-full h-full"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <h3
+                      className="text-white text-sm font-bold tracking-wide"
+                      style={{ fontFamily: "var(--font-minecraft)" }}
+                    >
+                      Potassium Client
+                    </h3>
+                    <p
+                      className="text-xs"
+                      style={{ color: "oklch(0.60 0.15 300)", fontFamily: "var(--font-minecraft)", fontSize: 9 }}
+                    >
+                      v2.4.1 | {username}
+                    </p>
                   </div>
-                ) : (
-                  <img
-                    key={bodyUrl}
-                    src={bodyUrl}
-                    alt={`${username} skin`}
-                    crossOrigin="anonymous"
-                    onError={() => setImgError(true)}
-                    style={{
-                      height: "182px",
-                      width: "auto",
-                      imageRendering: "pixelated",
-                      filter: "drop-shadow(0 0 10px oklch(0.65 0.28 300 / 0.5))",
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* HP bar */}
-              <div className="absolute left-1.5 right-1.5" style={{ bottom: 5 }}>
-                <div
-                  className="h-1 rounded-full overflow-hidden"
-                  style={{ background: "oklch(0.18 0.06 290 / 0.8)" }}
-                >
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${hpPercent}%`, background: hpColor }}
-                  />
+                </div>
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full" style={{ background: "oklch(0.65 0.28 100)" }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: "oklch(0.70 0.28 85)" }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: "oklch(0.65 0.28 25)" }} />
                 </div>
               </div>
+
+              {/* Content */}
+              <div className="flex" style={{ minHeight: 340 }}>
+                {/* Sidebar - Categories */}
+                <div
+                  className="w-32 flex-shrink-0 py-3 px-2 flex flex-col gap-1"
+                  style={{
+                    background: "oklch(0.08 0.04 290 / 0.6)",
+                    borderRight: "1px solid oklch(0.40 0.18 300 / 0.3)",
+                  }}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className="w-full text-left px-3 py-2 rounded-lg transition-all"
+                      style={{
+                        fontFamily: "var(--font-minecraft)",
+                        fontSize: 11,
+                        color: activeCategory === cat ? "white" : "oklch(0.60 0.12 300)",
+                        background:
+                          activeCategory === cat
+                            ? "linear-gradient(135deg, oklch(0.45 0.22 300 / 0.6), oklch(0.35 0.18 310 / 0.6))"
+                            : "transparent",
+                        border: activeCategory === cat ? "1px solid oklch(0.60 0.25 300 / 0.5)" : "1px solid transparent",
+                        boxShadow: activeCategory === cat ? "0 0 12px oklch(0.65 0.28 300 / 0.3)" : "none",
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+
+                  <div className="flex-1" />
+
+                  {/* Settings button */}
+                  <button
+                    className="w-full text-left px-3 py-2 rounded-lg transition-all flex items-center gap-2"
+                    style={{
+                      fontFamily: "var(--font-minecraft)",
+                      fontSize: 11,
+                      color: "oklch(0.55 0.10 300)",
+                      background: "transparent",
+                      border: "1px solid transparent",
+                    }}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Settings
+                  </button>
+                </div>
+
+                {/* Module Grid */}
+                <div className="flex-1 p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {modules
+                      .filter((m) => m.category === activeCategory)
+                      .map((mod) => (
+                        <button
+                          key={mod.name}
+                          onClick={() => toggleModule(mod.name)}
+                          className="relative text-left p-3 rounded-xl transition-all group"
+                          style={{
+                            background: mod.enabled
+                              ? "linear-gradient(135deg, oklch(0.35 0.20 300 / 0.5), oklch(0.28 0.16 310 / 0.5))"
+                              : "oklch(0.12 0.04 290 / 0.5)",
+                            border: mod.enabled
+                              ? "1px solid oklch(0.60 0.25 300 / 0.6)"
+                              : "1px solid oklch(0.35 0.12 300 / 0.3)",
+                            boxShadow: mod.enabled ? "0 0 15px oklch(0.65 0.28 300 / 0.25)" : "none",
+                          }}
+                        >
+                          {/* Status indicator */}
+                          <div
+                            className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full"
+                            style={{
+                              background: mod.enabled ? "oklch(0.70 0.30 160)" : "oklch(0.40 0.10 300)",
+                              boxShadow: mod.enabled ? "0 0 8px oklch(0.70 0.30 160)" : "none",
+                            }}
+                          />
+
+                          <div
+                            className="text-xs font-bold mb-0.5"
+                            style={{
+                              fontFamily: "var(--font-minecraft)",
+                              color: mod.enabled ? "white" : "oklch(0.55 0.10 300)",
+                            }}
+                          >
+                            {mod.name}
+                          </div>
+                          <div
+                            className="text-xs"
+                            style={{
+                              fontFamily: "var(--font-minecraft)",
+                              fontSize: 9,
+                              color: mod.enabled ? "oklch(0.70 0.15 300)" : "oklch(0.45 0.08 300)",
+                            }}
+                          >
+                            [{mod.key}]
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+
+                  {/* Module info panel */}
+                  <div
+                    className="mt-4 p-3 rounded-xl"
+                    style={{
+                      background: "oklch(0.08 0.03 290 / 0.6)",
+                      border: "1px solid oklch(0.35 0.15 300 / 0.3)",
+                    }}
+                  >
+                    <div
+                      className="text-xs mb-1"
+                      style={{ fontFamily: "var(--font-minecraft)", color: "oklch(0.55 0.12 300)" }}
+                    >
+                      Active Modules
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {modules
+                        .filter((m) => m.enabled)
+                        .map((m) => (
+                          <span
+                            key={m.name}
+                            className="px-2 py-0.5 rounded text-xs"
+                            style={{
+                              fontFamily: "var(--font-minecraft)",
+                              fontSize: 9,
+                              background: "oklch(0.40 0.20 300 / 0.4)",
+                              color: "oklch(0.85 0.15 300)",
+                              border: "1px solid oklch(0.55 0.20 300 / 0.4)",
+                            }}
+                          >
+                            {m.name}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                className="flex items-center justify-between px-4 py-2"
+                style={{
+                  background: "oklch(0.08 0.04 290 / 0.6)",
+                  borderTop: "1px solid oklch(0.40 0.18 300 / 0.3)",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-minecraft)",
+                    fontSize: 9,
+                    color: "oklch(0.50 0.10 300)",
+                  }}
+                >
+                  potassium.gg
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-minecraft)",
+                    fontSize: 9,
+                    color: "oklch(0.65 0.20 160)",
+                  }}
+                >
+                  UNDETECTED
+                </span>
+              </div>
             </div>
 
-            {/* Name tag + distance */}
-            <div className="mt-1 flex flex-col items-center gap-0.5">
-              <div
-                className="px-2 py-0.5 rounded text-center font-mono whitespace-nowrap"
-                style={{
-                  fontSize: 10,
-                  background: "oklch(0.08 0.03 290 / 0.85)",
-                  color: "white",
-                  border: "1px solid oklch(0.45 0.18 300 / 0.4)",
-                  maxWidth: 130,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {username || "???"}
-              </div>
-              <div
-                className="px-1.5 py-px rounded font-mono"
-                style={{
-                  fontSize: 9,
-                  color: "oklch(0.65 0.20 300)",
-                  background: "oklch(0.08 0.03 290 / 0.7)",
-                }}
-              >
-                {distance}m
-              </div>
-            </div>
+            {/* 3D shadow layer */}
+            <div
+              className="absolute -z-10 inset-0 rounded-2xl"
+              style={{
+                transform: "translateZ(-40px)",
+                background: "oklch(0.65 0.28 300 / 0.15)",
+                filter: "blur(30px)",
+              }}
+            />
           </div>
 
-          {/* Bottom hint */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
-            <span
-              className="text-xs font-mono px-3 py-1 rounded-lg glass-card"
-              style={{ color: "oklch(0.55 0.15 300)" }}
+          {/* Instruction */}
+          {isUnlocked && (
+            <div
+              className="absolute bottom-4 left-1/2 -translate-x-1/2"
+              style={{ zIndex: 10 }}
             >
-              {isUnlocked ? "drag the hitbox to track the player" : "enter username to unlock"}
-            </span>
-          </div>
+              <span
+                className="text-xs px-4 py-1.5 rounded-full glass-card"
+                style={{
+                  fontFamily: "var(--font-minecraft)",
+                  fontSize: 10,
+                  color: "oklch(0.55 0.15 300)",
+                }}
+              >
+                move mouse to rotate | click modules to toggle
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </section>
