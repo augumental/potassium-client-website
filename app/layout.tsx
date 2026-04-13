@@ -5,9 +5,9 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'Potassium Client — Undetected. Reliable. Best Value.',
+  title: 'Magnesium Client — Undetected. Reliable. Best Value.',
   description:
-    'Potassium is a premium Minecraft client built for performance, security, and undetected gameplay. Bypass screenshares, stay ahead of detection, and play with confidence.',
+    'Magnesium is a premium Minecraft client built for performance, security, and undetected gameplay. Bypass screenshares, stay ahead of detection, and cheat with confidence.',
 }
 
 export default function RootLayout({
