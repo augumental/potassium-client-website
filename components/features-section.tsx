@@ -59,7 +59,7 @@ export default function FeaturesSection() {
 
       <div className="max-w-6xl mx-auto relative">
         <div className="text-center mb-16">
-          <p className="text-xs tracking-widest uppercase text-primary mb-3">Why Potassium</p>
+          <p className="text-xs tracking-widest uppercase text-primary mb-3">Why Magnesium</p>
           <h2 className="text-4xl md:text-5xl font-bold text-white text-balance">
             Everything you need,
             <br />

@@ -145,7 +145,7 @@ export default function EspDemoSection() {
                   Unlock Preview
                 </h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Enter your Minecraft username to preview the Potassium Client GUI.
+                  Enter your Minecraft username to preview the Magnesium Client GUI.
                 </p>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <input
@@ -229,7 +229,7 @@ export default function EspDemoSection() {
                       className="text-white text-sm font-bold tracking-wide"
                       style={{ fontFamily: "var(--font-minecraft)" }}
                     >
-                      Potassium Client
+                      Magnesium Client
                     </h3>
                     <p
                       className="text-xs"
@@ -405,7 +405,7 @@ export default function EspDemoSection() {
                     color: "oklch(0.50 0.10 300)",
                   }}
                 >
-                  potassium.gg
+                  magnesium.wtf
                 </span>
                 <span
                   style={{

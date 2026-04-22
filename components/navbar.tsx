@@ -22,9 +22,9 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full btn-primary flex items-center justify-center text-white font-bold text-sm">
-            K
+            Mg
           </div>
-          <span className="text-white font-semibold tracking-wide">Potassium</span>
+          <span className="text-white font-semibold tracking-wide">Magnesium</span>
         </div>
 
         <div className="hidden md:flex items-center gap-8">

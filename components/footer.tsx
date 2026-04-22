@@ -4,13 +4,13 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full btn-primary flex items-center justify-center text-white font-bold text-xs">
-            K
+            Mg
           </div>
-          <span className="text-white font-semibold">Potassium Client</span>
+          <span className="text-white font-semibold">Magnesium Client</span>
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Undetected. Reliable. Best Value. &copy; {new Date().getFullYear()} Potassium Client. All rights reserved.
+          Undetected. Reliable. Best Value. &copy; {new Date().getFullYear()} Magnesium Client. All rights reserved.
         </p>
 
         <a

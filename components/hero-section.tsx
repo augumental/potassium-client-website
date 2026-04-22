@@ -105,7 +105,7 @@ export default function HeroSection() {
         </div>
 
         <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 tracking-tight glow-text text-balance">
-          Potassium
+          Magnesium
           <br />
           <span
             className="bg-clip-text text-transparent"
